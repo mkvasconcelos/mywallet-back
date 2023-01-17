@@ -45,7 +45,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.post("/users/sign-in", async (req, res) => {
-  const { email, pwd } = req.body;
+  const email = req.headers.email;
+  const { pwd } = req.body;
   const { error } = schemaLogin.validate({
     email,
     pwd,
@@ -62,7 +63,8 @@ app.post("/users/sign-in", async (req, res) => {
 });
 
 app.post("/users/sign-up", async (req, res) => {
-  const { name, email, pwd, repeatPwd } = req.body;
+  const { name, pwd, repeatPwd } = req.body;
+  const email = req.headers.email;
   const userDuplicate = await db.collection("users").findOne({
     email,
   });
@@ -150,7 +152,6 @@ app.delete("/expenses/:id", async (req, res) => {
   const expenseUser = await db.collection("expenses").findOne({
     _id: ObjectId(id),
   });
-  console.log(expenseUser);
   if (email !== expenseUser.email)
     return res.status(409).send("This expense is not yours.");
   try {
