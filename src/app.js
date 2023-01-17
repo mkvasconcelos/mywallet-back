@@ -22,9 +22,20 @@ const schemaUser = joi.object({
   repeatPwd: joi.ref("pwd"),
 });
 
-const schemaEmail = joi.object({
+const schemaLogin = joi.object({
   email: joi.string().email().required(),
   pwd: joi.string().required(),
+});
+
+const schemaEmail = joi.object({
+  email: joi.string().email().required(),
+});
+
+const schemaExpense = joi.object({
+  email: joi.string().email().required(),
+  value: joi.number().required(),
+  description: joi.string().required(),
+  status: joi.boolean().strict().required(),
 });
 
 const app = express();
@@ -35,7 +46,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.post("/users/sign-in", async (req, res) => {
   const { email, pwd } = req.body;
-  const { error } = schemaEmail.validate({
+  const { error } = schemaLogin.validate({
     email,
     pwd,
   });
@@ -71,6 +82,54 @@ app.post("/users/sign-up", async (req, res) => {
       name,
       email,
       pwd,
+    });
+    return res.sendStatus(201);
+  } catch (err) {
+    return res.sendStatus(422);
+  }
+});
+
+app.get("/expenses", async (req, res) => {
+  const email = req.headers.email;
+  const { error } = schemaEmail.validate({ email });
+  if (error) return res.status(422).send(error.details[0].message);
+  const userSignUp = await db.collection("users").findOne({
+    email,
+  });
+  if (!userSignUp)
+    return res.status(422).send("Email does not exist in our database.");
+  try {
+    const expenses = await db
+      .collection("expenses")
+      .find({
+        email,
+      })
+      .toArray();
+    return res.status(200).send(expenses);
+  } catch (err) {
+    return res.sendStatus(422);
+  }
+});
+
+app.post("/expenses", async (req, res) => {
+  const { value, description, status } = req.body;
+  const email = req.headers.email;
+  const { error } = schemaExpense.validate(
+    { email, value, description, status },
+    { abortEarly: true }
+  );
+  if (error) return res.status(422).send(error.details[0].message);
+  const userSignUp = await db.collection("users").findOne({
+    email,
+  });
+  if (!userSignUp)
+    return res.status(422).send("Email does not exist in our database.");
+  try {
+    await db.collection("expenses").insertOne({
+      email,
+      value,
+      description,
+      status,
     });
     return res.sendStatus(201);
   } catch (err) {
