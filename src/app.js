@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import joi from "joi";
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -132,6 +132,24 @@ app.post("/expenses", async (req, res) => {
       status,
     });
     return res.sendStatus(201);
+  } catch (err) {
+    return res.sendStatus(422);
+  }
+});
+
+app.delete("/expenses/:id", async (req, res) => {
+  const { id } = req.params;
+  const email = req.headers.email;
+  const { error } = schemaEmail.validate({ email });
+  if (error) return res.status(422).send(error.details[0].message);
+  const userSignUp = await db.collection("users").findOne({
+    email,
+  });
+  if (!userSignUp)
+    return res.status(422).send("Email does not exist in our database.");
+  try {
+    await db.collection("expenses").deleteOne({ _id: ObjectId(id) });
+    return res.sendStatus(200);
   } catch (err) {
     return res.sendStatus(422);
   }
