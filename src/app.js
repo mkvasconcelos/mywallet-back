@@ -22,15 +22,37 @@ const schemaUser = joi.object({
   repeatPwd: joi.ref("pwd"),
 });
 
+const schemaEmail = joi.object({
+  email: joi.string().email().required(),
+  pwd: joi.string().required(),
+});
+
 const app = express();
 const PORT = process.env.PORT;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.post("/users", async (req, res) => {
+app.post("/users/sign-in", async (req, res) => {
+  const { email, pwd } = req.body;
+  const { error } = schemaEmail.validate({
+    email,
+    pwd,
+  });
+  if (error) return res.status(422).send(error.details[0].message);
+  const userSignUp = await db.collection("users").findOne({
+    email,
+  });
+  if (!userSignUp || pwd !== userSignUp.pwd) {
+    return res.status(403).send("Email or password wrong.");
+  } else {
+    return res.sendStatus(200);
+  }
+});
+
+app.post("/users/sign-up", async (req, res) => {
   const { name, email, pwd, repeatPwd } = req.body;
-  const userDuplicate = await db.collection("users").find({
+  const userDuplicate = await db.collection("users").findOne({
     email,
   });
   if (userDuplicate) return res.status(409).send("Email already in use.");
@@ -43,7 +65,7 @@ app.post("/users", async (req, res) => {
     },
     { abortEarly: true }
   );
-  if (error) return res.status(422).send(error.details);
+  if (error) return res.status(422).send(error.details[0].message);
   try {
     await db.collection("users").insertOne({
       name,
