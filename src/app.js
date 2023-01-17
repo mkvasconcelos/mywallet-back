@@ -147,8 +147,51 @@ app.delete("/expenses/:id", async (req, res) => {
   });
   if (!userSignUp)
     return res.status(422).send("Email does not exist in our database.");
+  const expenseUser = await db.collection("expenses").findOne({
+    _id: ObjectId(id),
+  });
+  console.log(expenseUser);
+  if (email !== expenseUser.email)
+    return res.status(409).send("This expense is not yours.");
   try {
     await db.collection("expenses").deleteOne({ _id: ObjectId(id) });
+    return res.sendStatus(200);
+  } catch (err) {
+    return res.sendStatus(422);
+  }
+});
+
+app.put("/expenses/:id", async (req, res) => {
+  const { id } = req.params;
+  const { value, description, status } = req.body;
+  const email = req.headers.email;
+  const { error } = schemaExpense.validate(
+    { email, value, description, status },
+    { abortEarly: true }
+  );
+  if (error) return res.status(422).send(error.details[0].message);
+  const userSignUp = await db.collection("users").findOne({
+    email,
+  });
+  if (!userSignUp)
+    return res.status(422).send("Email does not exist in our database.");
+  const expenseUser = await db.collection("expenses").findOne({
+    _id: ObjectId(id),
+  });
+  if (email !== expenseUser.email)
+    return res.status(409).send("This expense is not yours.");
+  try {
+    await db.collection("expenses").updateOne(
+      { _id: ObjectId(id) },
+      {
+        $set: {
+          email,
+          value,
+          description,
+          status,
+        },
+      }
+    );
     return res.sendStatus(200);
   } catch (err) {
     return res.sendStatus(422);
