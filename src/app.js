@@ -18,13 +18,13 @@ try {
 const schemaUser = joi.object({
   name: joi.string().min(3).required(),
   email: joi.string().email().required(),
-  pwd: joi.string().required(),
+  pwd: joi.string().min(4).required(),
   repeatPwd: joi.ref("pwd"),
 });
 
 const schemaLogin = joi.object({
   email: joi.string().email().required(),
-  pwd: joi.string().required(),
+  pwd: joi.string().min(4).required(),
 });
 
 const schemaEmail = joi.object({
