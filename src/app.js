@@ -45,6 +45,22 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+app.get("/users", async (req, res) => {
+  const email = req.headers.email;
+  const { error } = schemaEmail.validate({
+    email,
+  });
+  if (error) return res.status(422).send(error.details[0].message);
+  const userSignUp = await db.collection("users").findOne({
+    email,
+  });
+  if (!userSignUp) {
+    return res.status(404).send("Email does not exist in our database.");
+  } else {
+    return res.status(200).send(userSignUp);
+  }
+});
+
 app.post("/users/sign-in", async (req, res) => {
   const email = req.headers.email;
   const { pwd } = req.body;
@@ -103,7 +119,7 @@ app.get("/expenses", async (req, res) => {
     email,
   });
   if (!userSignUp)
-    return res.status(422).send("Email does not exist in our database.");
+    return res.status(404).send("Email does not exist in our database.");
   try {
     const expenses = await db
       .collection("expenses")
@@ -129,7 +145,7 @@ app.post("/expenses", async (req, res) => {
     email,
   });
   if (!userSignUp)
-    return res.status(422).send("Email does not exist in our database.");
+    return res.status(404).send("Email does not exist in our database.");
   try {
     await db.collection("expenses").insertOne({
       email,
@@ -160,7 +176,7 @@ app.delete("/expenses/:id", async (req, res) => {
     email,
   });
   if (!userSignUp)
-    return res.status(422).send("Email does not exist in our database.");
+    return res.status(404).send("Email does not exist in our database.");
   const expenseUser = await db.collection("expenses").findOne({
     _id: ObjectId(id),
   });
@@ -195,7 +211,7 @@ app.put("/expenses/:id", async (req, res) => {
     email,
   });
   if (!userSignUp)
-    return res.status(422).send("Email does not exist in our database.");
+    return res.status(404).send("Email does not exist in our database.");
   const expenseUser = await db.collection("expenses").findOne({
     _id: ObjectId(id),
   });
