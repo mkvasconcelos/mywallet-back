@@ -3,6 +3,7 @@ import cors from "cors";
 import joi from "joi";
 import { MongoClient, ObjectId } from "mongodb";
 import dotenv from "dotenv";
+import bcrypt from "bcrypt";
 dotenv.config();
 
 const mongoClient = new MongoClient(process.env.DATABASE_URL);
@@ -55,7 +56,8 @@ app.post("/users/sign-in", async (req, res) => {
   const userSignUp = await db.collection("users").findOne({
     email,
   });
-  if (!userSignUp || pwd !== userSignUp.pwd) {
+
+  if (!userSignUp || !bcrypt.compareSync(pwd, userSignUp.pwd)) {
     return res.status(403).send("Email or password wrong.");
   } else {
     return res.sendStatus(200);
@@ -79,11 +81,13 @@ app.post("/users/sign-up", async (req, res) => {
     { abortEarly: true }
   );
   if (error) return res.status(422).send(error.details[0].message);
+  const hashPwd = bcrypt.hashSync(pwd, 10);
   try {
     await db.collection("users").insertOne({
       name,
       email,
-      pwd,
+      pwd: hashPwd,
+      total: 0,
     });
     return res.sendStatus(201);
   } catch (err) {
@@ -133,6 +137,14 @@ app.post("/expenses", async (req, res) => {
       description,
       status,
     });
+    await db.collection("users").updateOne(
+      { _id: ObjectId(userSignUp._id) },
+      {
+        $inc: {
+          total: status ? value : -value,
+        },
+      }
+    );
     return res.sendStatus(201);
   } catch (err) {
     return res.sendStatus(422);
@@ -156,6 +168,14 @@ app.delete("/expenses/:id", async (req, res) => {
     return res.status(409).send("This expense is not yours.");
   try {
     await db.collection("expenses").deleteOne({ _id: ObjectId(id) });
+    await db.collection("users").updateOne(
+      { _id: ObjectId(userSignUp._id) },
+      {
+        $inc: {
+          total: !userSignUp.status ? expenseUser.value : -expenseUser.value,
+        },
+      }
+    );
     return res.sendStatus(200);
   } catch (err) {
     return res.sendStatus(422);
@@ -190,6 +210,16 @@ app.put("/expenses/:id", async (req, res) => {
           value,
           description,
           status,
+        },
+      }
+    );
+    await db.collection("users").updateOne(
+      { _id: ObjectId(userSignUp._id) },
+      {
+        $inc: {
+          total: userSignUp.status
+            ? value - expenseUser.value
+            : expenseUser.value - value,
         },
       }
     );
