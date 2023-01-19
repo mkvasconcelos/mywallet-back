@@ -57,6 +57,13 @@ setInterval(async () => {
 }, 60000);
 
 app.get("/users", async (req, res) => {
+  const { authorization } = req.headers;
+  const token = authorization?.replace("Bearer ", "");
+  if (!token) return res.sendStatus(401);
+  const session = await db.collection("sessions").findOne({ token });
+  if (!session) {
+    return res.sendStatus(401);
+  }
   const email = req.headers.email;
   const { error } = schemaEmail.validate({
     email,
@@ -68,6 +75,7 @@ app.get("/users", async (req, res) => {
   if (!userSignUp) {
     return res.status(404).send("Email does not exist in our database.");
   } else {
+    delete userSignUp.pwd;
     return res.status(200).send(userSignUp);
   }
 });
