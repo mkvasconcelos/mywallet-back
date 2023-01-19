@@ -4,6 +4,7 @@ import joi from "joi";
 import { MongoClient, ObjectId } from "mongodb";
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
+import { v4 as uuidv4 } from "uuid";
 dotenv.config();
 
 const mongoClient = new MongoClient(process.env.DATABASE_URL);
@@ -45,6 +46,16 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+setInterval(async () => {
+  const deleteSessions = await db
+    .collection("sessions")
+    .find({ date: { $lt: Date.now() - 1800000 } })
+    .toArray();
+  deleteSessions.map(
+    async (s) => await db.collection("sessions").deleteOne({ _id: s._id })
+  );
+}, 60000);
+
 app.get("/users", async (req, res) => {
   const email = req.headers.email;
   const { error } = schemaEmail.validate({
@@ -64,6 +75,7 @@ app.get("/users", async (req, res) => {
 app.post("/users/sign-in", async (req, res) => {
   const email = req.headers.email;
   const { pwd } = req.body;
+  const token = uuidv4();
   const { error } = schemaLogin.validate({
     email,
     pwd,
@@ -72,11 +84,21 @@ app.post("/users/sign-in", async (req, res) => {
   const userSignUp = await db.collection("users").findOne({
     email,
   });
-
-  if (!userSignUp || !bcrypt.compareSync(pwd, userSignUp.pwd)) {
+  if (!userSignUp || !bcrypt.compareSync(pwd, userSignUp.pwd))
     return res.status(403).send("Email or password wrong.");
-  } else {
-    return res.sendStatus(200);
+  const userAuthorized = await db.collection("sessions").findOne({
+    userId: userSignUp._id,
+  });
+  if (userAuthorized) return res.status(200).send(token);
+  try {
+    await db.collection("sessions").insertOne({
+      token,
+      userId: userSignUp._id,
+      date: Date.now(),
+    });
+    return res.status(201).send(token);
+  } catch {
+    return res.sendStatus(500);
   }
 });
 
