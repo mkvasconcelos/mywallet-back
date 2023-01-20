@@ -137,7 +137,7 @@ app.post("/users/sign-up", async (req, res) => {
       name,
       email,
       pwd: hashPwd,
-      total: 0,
+      total: Number(0).toFixed(2),
     });
     return res.sendStatus(201);
   } catch (err) {
@@ -206,7 +206,7 @@ app.post("/expenses", async (req, res) => {
       { _id: ObjectId(userSignUp._id) },
       {
         $inc: {
-          total: status ? value : -value,
+          total: status ? value.toFixed(2) : -value.toFixed(2),
         },
       }
     );
@@ -244,7 +244,9 @@ app.delete("/expenses/:id", async (req, res) => {
       { _id: ObjectId(userSignUp._id) },
       {
         $inc: {
-          total: !userSignUp.status ? expenseUser.value : -expenseUser.value,
+          total: !userSignUp.status
+            ? expenseUser.value.toFixed(2)
+            : -expenseUser.value.toFixed(2),
         },
       }
     );
@@ -295,8 +297,8 @@ app.put("/expenses/:id", async (req, res) => {
       {
         $inc: {
           total: userSignUp.status
-            ? value - expenseUser.value
-            : expenseUser.value - value,
+            ? (value - expenseUser.value).toFixed(2)
+            : (expenseUser.value - value).toFixed(2),
         },
       }
     );
