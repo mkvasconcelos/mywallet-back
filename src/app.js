@@ -186,7 +186,8 @@ app.post("/expenses", async (req, res) => {
   const { value, description, status } = req.body;
   const newValue = Number(value);
   const email = req.headers.email;
-  const operator = status ? 1 : -1;
+  const newStatus = userSignUp.total + (status ? 1 : -1) * value;
+  console.log(newStatus);
   const { error } = schemaExpense.validate(
     { email, value: newValue, description, status },
     { abortEarly: true }
@@ -263,7 +264,14 @@ app.delete("/expenses/:id", async (req, res) => {
         },
       }
     );
-    return res.sendStatus(200);
+    // return res.sendStatus(200);
+    const expenses = await db
+      .collection("expenses")
+      .find({
+        email,
+      })
+      .toArray();
+    return res.status(200).send(expenses);
   } catch (err) {
     return res.sendStatus(422);
   }
@@ -323,7 +331,14 @@ app.put("/expenses/:id", async (req, res) => {
         },
       }
     );
-    return res.sendStatus(200);
+    // return res.sendStatus(200);
+    const expenses = await db
+      .collection("expenses")
+      .find({
+        email,
+      })
+      .toArray();
+    return res.status(200).send(expenses);
   } catch (err) {
     return res.sendStatus(422);
   }
