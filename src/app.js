@@ -5,6 +5,7 @@ import { MongoClient, ObjectId } from "mongodb";
 import dotenv from "dotenv";
 import bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
+import dayjs from "dayjs";
 dotenv.config();
 
 const mongoClient = new MongoClient(process.env.DATABASE_URL);
@@ -196,6 +197,7 @@ app.post("/expenses", async (req, res) => {
       value,
       description,
       status,
+      date: dayjs().format("DD/MM"),
     });
     await db.collection("users").updateOne(
       { _id: ObjectId(userSignUp._id) },
@@ -280,10 +282,8 @@ app.put("/expenses/:id", async (req, res) => {
       { _id: ObjectId(id) },
       {
         $set: {
-          email,
           value,
           description,
-          status,
         },
       }
     );
