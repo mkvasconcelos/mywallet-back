@@ -186,6 +186,7 @@ app.post("/expenses", async (req, res) => {
   const { value, description, status } = req.body;
   const newValue = Number(value);
   const email = req.headers.email;
+  const operator = status ? 1 : -1;
   const { error } = schemaExpense.validate(
     { email, value: newValue, description, status },
     { abortEarly: true }
@@ -211,7 +212,8 @@ app.post("/expenses", async (req, res) => {
           total: status ? value : -value,
         },
         $set: {
-          status: total + (status ? 1 : -1) * value >= 0 ? true : false,
+          status:
+            userSignUp.total + (status ? 1 : -1) * value >= 0 ? true : false,
         },
       }
     );
@@ -253,7 +255,9 @@ app.delete("/expenses/:id", async (req, res) => {
         },
         $set: {
           status:
-            total + (!expenseUser.status ? 1 : -1) * expenseUser.value >= 0
+            userSignUp.total +
+              (!expenseUser.status ? 1 : -1) * expenseUser.value >=
+            0
               ? true
               : false,
         },
@@ -311,7 +315,7 @@ app.put("/expenses/:id", async (req, res) => {
         },
         $set: {
           status:
-            total +
+            userSignUp.total +
               (expenseUser.status ? 1 : -1) * (value - expenseUser.value) >=
             0
               ? true
