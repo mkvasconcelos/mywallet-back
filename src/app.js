@@ -186,8 +186,6 @@ app.post("/expenses", async (req, res) => {
   const { value, description, status } = req.body;
   const newValue = Number(value);
   const email = req.headers.email;
-  const newStatus = userSignUp.total + (status ? 1 : -1) * value;
-  console.log(newStatus);
   const { error } = schemaExpense.validate(
     { email, value: newValue, description, status },
     { abortEarly: true }
