@@ -137,7 +137,7 @@ app.post("/users/sign-up", async (req, res) => {
       name,
       email,
       pwd: hashPwd,
-      total: Number(0).toFixed(2),
+      total: 0,
       status: true,
     });
     return res.sendStatus(201);
@@ -184,9 +184,10 @@ app.post("/expenses", async (req, res) => {
     return res.sendStatus(401);
   }
   const { value, description, status } = req.body;
+  const newValue = Number(value);
   const email = req.headers.email;
   const { error } = schemaExpense.validate(
-    { email, value, description, status },
+    { email, value: newValue, description, status },
     { abortEarly: true }
   );
   if (error) return res.status(422).send(error.details[0].message);
@@ -198,7 +199,7 @@ app.post("/expenses", async (req, res) => {
   try {
     await db.collection("expenses").insertOne({
       email,
-      value: value.toFixed(2),
+      value: newValue,
       description,
       status,
       date: dayjs().format("DD/MM"),
@@ -207,11 +208,10 @@ app.post("/expenses", async (req, res) => {
       { _id: ObjectId(userSignUp._id) },
       {
         $inc: {
-          total: status ? value.toFixed(2) : -value.toFixed(2),
+          total: status ? value : -value,
         },
         $set: {
-          status:
-            total + (status ? 1 : -1) * value.toFixed(2) >= 0 ? true : false,
+          status: total + (status ? 1 : -1) * value >= 0 ? true : false,
         },
       }
     );
@@ -249,15 +249,11 @@ app.delete("/expenses/:id", async (req, res) => {
       { _id: ObjectId(userSignUp._id) },
       {
         $inc: {
-          total: !expenseUser.status
-            ? expenseUser.value.toFixed(2)
-            : -expenseUser.value.toFixed(2),
+          total: !expenseUser.status ? expenseUser.value : -expenseUser.value,
         },
         $set: {
           status:
-            total +
-              (!expenseUser.status ? 1 : -1) * expenseUser.value.toFixed(2) >=
-            0
+            total + (!expenseUser.status ? 1 : -1) * expenseUser.value >= 0
               ? true
               : false,
         },
@@ -310,14 +306,13 @@ app.put("/expenses/:id", async (req, res) => {
       {
         $inc: {
           total: expenseUser.status
-            ? (value - expenseUser.value).toFixed(2)
-            : (expenseUser.value - value).toFixed(2),
+            ? value - expenseUser.value
+            : expenseUser.value - value,
         },
         $set: {
           status:
             total +
-              (expenseUser.status ? 1 : -1) *
-                (value - expenseUser.value).toFixed(2) >=
+              (expenseUser.status ? 1 : -1) * (value - expenseUser.value) >=
             0
               ? true
               : false,
