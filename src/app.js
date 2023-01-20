@@ -194,7 +194,7 @@ app.post("/expenses", async (req, res) => {
   try {
     await db.collection("expenses").insertOne({
       email,
-      value,
+      value: value.toFixed(2),
       description,
       status,
       date: dayjs().format("DD/MM"),
