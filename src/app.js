@@ -98,7 +98,10 @@ app.post("/users/sign-in", async (req, res) => {
   const userAuthorized = await db.collection("sessions").findOne({
     userId: userSignUp._id,
   });
-  if (userAuthorized) return res.status(200).send(userAuthorized.token);
+  if (userAuthorized)
+    return res
+      .status(200)
+      .send({ token: userAuthorized.token, name: userSignUp.name });
   try {
     await db.collection("sessions").insertOne({
       token,
