@@ -104,7 +104,7 @@ app.post("/users/sign-in", async (req, res) => {
       userId: userSignUp._id,
       date: Date.now(),
     });
-    return res.status(201).send(token);
+    return res.status(201).send({ token, name: userSignUp.name });
   } catch {
     return res.sendStatus(500);
   }
@@ -142,6 +142,13 @@ app.post("/users/sign-up", async (req, res) => {
 });
 
 app.get("/expenses", async (req, res) => {
+  const { authorization } = req.headers;
+  const token = authorization?.replace("Bearer ", "");
+  if (!token) return res.sendStatus(401);
+  const session = await db.collection("sessions").findOne({ token });
+  if (!session) {
+    return res.sendStatus(401);
+  }
   const email = req.headers.email;
   const { error } = schemaEmail.validate({ email });
   if (error) return res.status(422).send(error.details[0].message);
@@ -164,6 +171,13 @@ app.get("/expenses", async (req, res) => {
 });
 
 app.post("/expenses", async (req, res) => {
+  const { authorization } = req.headers;
+  const token = authorization?.replace("Bearer ", "");
+  if (!token) return res.sendStatus(401);
+  const session = await db.collection("sessions").findOne({ token });
+  if (!session) {
+    return res.sendStatus(401);
+  }
   const { value, description, status } = req.body;
   const email = req.headers.email;
   const { error } = schemaExpense.validate(
@@ -198,6 +212,13 @@ app.post("/expenses", async (req, res) => {
 });
 
 app.delete("/expenses/:id", async (req, res) => {
+  const { authorization } = req.headers;
+  const token = authorization?.replace("Bearer ", "");
+  if (!token) return res.sendStatus(401);
+  const session = await db.collection("sessions").findOne({ token });
+  if (!session) {
+    return res.sendStatus(401);
+  }
   const { id } = req.params;
   const email = req.headers.email;
   const { error } = schemaEmail.validate({ email });
@@ -229,6 +250,13 @@ app.delete("/expenses/:id", async (req, res) => {
 });
 
 app.put("/expenses/:id", async (req, res) => {
+  const { authorization } = req.headers;
+  const token = authorization?.replace("Bearer ", "");
+  if (!token) return res.sendStatus(401);
+  const session = await db.collection("sessions").findOne({ token });
+  if (!session) {
+    return res.sendStatus(401);
+  }
   const { id } = req.params;
   const { value, description, status } = req.body;
   const email = req.headers.email;
