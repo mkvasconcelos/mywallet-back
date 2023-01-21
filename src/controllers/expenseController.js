@@ -1,25 +1,9 @@
 import dayjs from "dayjs";
-import { schemaEmail } from "../schemas/userSchema.js";
-import { schemaExpense } from "../schemas/expenseSchema.js";
 import db from "../database/database.js";
 import { ObjectId } from "mongodb";
 
-export async function getExpenses(req, res) {
-  const { authorization } = req.headers;
-  const token = authorization?.replace("Bearer ", "");
-  if (!token) return res.sendStatus(401);
-  const session = await db.collection("sessions").findOne({ token });
-  if (!session) {
-    return res.sendStatus(401);
-  }
-  const email = req.headers.email;
-  // const { error } = schemaEmail.validate({ email });
-  // if (error) return res.status(422).send(error.details[0].message);
-  const userSignUp = await db.collection("users").findOne({
-    email,
-  });
-  if (!userSignUp)
-    return res.status(404).send("Email does not exist in our database.");
+export async function getExpenses(_, res) {
+  const { email } = res.locals.user;
   try {
     const expenses = await db
       .collection("expenses")
@@ -34,87 +18,47 @@ export async function getExpenses(req, res) {
 }
 
 export async function postExpenses(req, res) {
-  const { authorization } = req.headers;
-  const token = authorization?.replace("Bearer ", "");
-  if (!token) return res.sendStatus(401);
-  const session = await db.collection("sessions").findOne({ token });
-  if (!session) {
-    return res.sendStatus(401);
-  }
-  const email = req.headers.email;
+  const user = res.locals.user;
   const { value, description, status } = req.body;
   const newValue = Number(value);
-  // const { error } = schemaExpense.validate(
-  //   { email, value: newValue, description, status },
-  //   { abortEarly: true }
-  // );
-  // if (error) return res.status(422).send(error.details[0].message);
-  const userSignUp = await db.collection("users").findOne({
-    email,
-  });
-  if (!userSignUp)
-    return res.status(404).send("Email does not exist in our database.");
   try {
     await db.collection("expenses").insertOne({
-      email,
+      email: user.email,
       value: newValue,
       description,
       status,
       date: dayjs().format("DD/MM"),
     });
     await db.collection("users").updateOne(
-      { _id: ObjectId(userSignUp._id) },
+      { _id: ObjectId(user._id) },
       {
         $inc: {
-          total: status ? value : -value,
+          total: status ? newValue : -value,
         },
         $set: {
-          status:
-            userSignUp.total + (status ? 1 : -1) * value >= 0 ? true : false,
+          status: user.total + (status ? 1 : -1) * newValue >= 0 ? true : false,
         },
       }
     );
     return res.sendStatus(201);
-  } catch (err) {
-    return res.sendStatus(422);
+  } catch {
+    return res.sendStatus(500);
   }
 }
 
-export async function deleteExpenses(req, res) {
-  const { authorization } = req.headers;
-  const token = authorization?.replace("Bearer ", "");
-  if (!token) return res.sendStatus(401);
-  const session = await db.collection("sessions").findOne({ token });
-  if (!session) {
-    return res.sendStatus(401);
-  }
-  const { id } = req.params;
-  const email = req.headers.email;
-  // const { error } = schemaEmail.validate({ email });
-  // if (error) return res.status(422).send(error.details[0].message);
-  const userSignUp = await db.collection("users").findOne({
-    email,
-  });
-  if (!userSignUp)
-    return res.status(404).send("Email does not exist in our database.");
-  const expenseUser = await db.collection("expenses").findOne({
-    _id: ObjectId(id),
-  });
-  if (email !== expenseUser.email)
-    return res.status(409).send("This expense is not yours.");
+export async function deleteExpenses(_, res) {
+  const { user, expense } = res.locals;
   try {
-    await db.collection("expenses").deleteOne({ _id: ObjectId(id) });
+    await db.collection("expenses").deleteOne({ _id: ObjectId(expense._id) });
     await db.collection("users").updateOne(
-      { _id: ObjectId(userSignUp._id) },
+      { _id: ObjectId(user._id) },
       {
         $inc: {
-          total: !expenseUser.status ? expenseUser.value : -expenseUser.value,
+          total: !expense.status ? expense.value : -expense.value,
         },
         $set: {
           status:
-            userSignUp.total +
-              (!expenseUser.status ? 1 : -1) * expenseUser.value >=
-            0
+            user.total + (!expense.status ? 1 : -1) * expense.value >= 0
               ? true
               : false,
         },
@@ -123,7 +67,7 @@ export async function deleteExpenses(req, res) {
     const expenses = await db
       .collection("expenses")
       .find({
-        email,
+        email: user.email,
       })
       .toArray();
     return res.status(200).send(expenses);
@@ -133,53 +77,31 @@ export async function deleteExpenses(req, res) {
 }
 
 export async function updateExpenses(req, res) {
-  const { authorization } = req.headers;
-  const token = authorization?.replace("Bearer ", "");
-  if (!token) return res.sendStatus(401);
-  const session = await db.collection("sessions").findOne({ token });
-  if (!session) {
-    return res.sendStatus(401);
-  }
-  const { id } = req.params;
-  const { value, description, status } = req.body;
-  const email = req.headers.email;
-  // const { error } = schemaExpense.validate(
-  //   { email, value, description, status },
-  //   { abortEarly: true }
-  // );
-  // if (error) return res.status(422).send(error.details[0].message);
-  const userSignUp = await db.collection("users").findOne({
-    email,
-  });
-  if (!userSignUp)
-    return res.status(404).send("Email does not exist in our database.");
-  const expenseUser = await db.collection("expenses").findOne({
-    _id: ObjectId(id),
-  });
-  if (email !== expenseUser.email)
-    return res.status(409).send("This expense is not yours.");
+  const { user, expense } = res.locals;
+  const { value, description } = req.body;
+  const newValue = Number(value);
   try {
     await db.collection("expenses").updateOne(
-      { _id: ObjectId(id) },
+      { _id: ObjectId(expense._id) },
       {
         $set: {
-          value,
+          value: newValue,
           description,
         },
       }
     );
     await db.collection("users").updateOne(
-      { _id: ObjectId(userSignUp._id) },
+      { _id: ObjectId(user._id) },
       {
         $inc: {
-          total: expenseUser.status
-            ? value - expenseUser.value
-            : expenseUser.value - value,
+          total: expense.status
+            ? newValue - expense.value
+            : expense.value - newValue,
         },
         $set: {
           status:
-            userSignUp.total +
-              (expenseUser.status ? 1 : -1) * (value - expenseUser.value) >=
+            user.total +
+              (expense.status ? 1 : -1) * (newValue - expense.value) >=
             0
               ? true
               : false,
@@ -189,7 +111,7 @@ export async function updateExpenses(req, res) {
     const expenses = await db
       .collection("expenses")
       .find({
-        email,
+        email: user.email,
       })
       .toArray();
     return res.status(200).send(expenses);

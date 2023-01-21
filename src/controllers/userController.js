@@ -1,26 +1,38 @@
-import { schemaEmail } from "../schemas/userSchema.js";
+import { ObjectId } from "mongodb";
+import bcrypt from "bcrypt";
 import db from "../database/database.js";
 
-export async function getUser(req, res) {
-  const { authorization } = req.headers;
-  const token = authorization?.replace("Bearer ", "");
-  if (!token) return res.sendStatus(401);
-  const session = await db.collection("sessions").findOne({ token });
-  if (!session) {
-    return res.sendStatus(401);
+export async function getUser(_, res) {
+  const user = res.locals.user;
+  delete user.pwd;
+  delete user._id;
+  let total = user.total;
+  if (!user.status) {
+    total *= -1;
   }
-  const email = req.headers.email;
-  // const { error } = schemaEmail.validate({
-  //   email,
-  // });
-  // if (error) return res.status(422).send(error.details[0].message);
-  const userSignUp = await db.collection("users").findOne({
-    email,
-  });
-  if (!userSignUp) {
-    return res.status(404).send("Email does not exist in our database.");
-  } else {
-    delete userSignUp.pwd;
-    return res.status(200).send(userSignUp);
+  return res
+    .status(200)
+    .send({ name: user.name, email: user.email, total, status: user.status });
+}
+
+export async function updateUser(req, res) {
+  const user = res.locals.user;
+  const { name, oldPwd, newPwd } = req.body;
+  if (!bcrypt.compareSync(oldPwd, user.pwd))
+    return res.status(403).send("Password wrong.");
+  const hashPwd = bcrypt.hashSync(newPwd, 10);
+  try {
+    const newUser = await db.collection("users").updateOne(
+      { _id: ObjectId(user._id) },
+      {
+        $set: {
+          name,
+          pwd: hashPwd,
+        },
+      }
+    );
+    return res.status(201).send({ name });
+  } catch (err) {
+    return res.sendStatus(500);
   }
 }
