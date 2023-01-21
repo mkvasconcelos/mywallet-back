@@ -7,11 +7,11 @@ export async function signIn(req, res) {
   const email = req.headers.email;
   const { pwd } = req.body;
   const token = uuidv4();
-  const { error } = schemaLogin.validate({
-    email,
-    pwd,
-  });
-  if (error) return res.status(422).send(error.details[0].message);
+  // const { error } = schemaLogin.validate({
+  //   email,
+  //   pwd,
+  // });
+  // if (error) return res.status(422).send(error.details[0].message);
   const userSignUp = await db.collection("users").findOne({
     email,
   });
@@ -43,16 +43,16 @@ export async function signUp(req, res) {
     email,
   });
   if (userDuplicate) return res.status(409).send("Email already in use.");
-  const { error } = schemaUser.validate(
-    {
-      name,
-      email,
-      pwd,
-      repeatPwd,
-    },
-    { abortEarly: true }
-  );
-  if (error) return res.status(422).send(error.details[0].message);
+  // const { error } = schemaUser.validate(
+  //   {
+  //     name,
+  //     email,
+  //     pwd,
+  //     repeatPwd,
+  //   },
+  //   { abortEarly: true }
+  // );
+  // if (error) return res.status(422).send(error.details[0].message);
   const hashPwd = bcrypt.hashSync(pwd, 10);
   try {
     await db.collection("users").insertOne({

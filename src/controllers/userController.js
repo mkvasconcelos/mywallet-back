@@ -10,10 +10,10 @@ export async function getUser(req, res) {
     return res.sendStatus(401);
   }
   const email = req.headers.email;
-  const { error } = schemaEmail.validate({
-    email,
-  });
-  if (error) return res.status(422).send(error.details[0].message);
+  // const { error } = schemaEmail.validate({
+  //   email,
+  // });
+  // if (error) return res.status(422).send(error.details[0].message);
   const userSignUp = await db.collection("users").findOne({
     email,
   });

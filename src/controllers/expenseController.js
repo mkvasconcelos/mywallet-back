@@ -13,8 +13,8 @@ export async function getExpenses(req, res) {
     return res.sendStatus(401);
   }
   const email = req.headers.email;
-  const { error } = schemaEmail.validate({ email });
-  if (error) return res.status(422).send(error.details[0].message);
+  // const { error } = schemaEmail.validate({ email });
+  // if (error) return res.status(422).send(error.details[0].message);
   const userSignUp = await db.collection("users").findOne({
     email,
   });
@@ -41,14 +41,14 @@ export async function postExpenses(req, res) {
   if (!session) {
     return res.sendStatus(401);
   }
+  const email = req.headers.email;
   const { value, description, status } = req.body;
   const newValue = Number(value);
-  const email = req.headers.email;
-  const { error } = schemaExpense.validate(
-    { email, value: newValue, description, status },
-    { abortEarly: true }
-  );
-  if (error) return res.status(422).send(error.details[0].message);
+  // const { error } = schemaExpense.validate(
+  //   { email, value: newValue, description, status },
+  //   { abortEarly: true }
+  // );
+  // if (error) return res.status(422).send(error.details[0].message);
   const userSignUp = await db.collection("users").findOne({
     email,
   });
@@ -90,8 +90,8 @@ export async function deleteExpenses(req, res) {
   }
   const { id } = req.params;
   const email = req.headers.email;
-  const { error } = schemaEmail.validate({ email });
-  if (error) return res.status(422).send(error.details[0].message);
+  // const { error } = schemaEmail.validate({ email });
+  // if (error) return res.status(422).send(error.details[0].message);
   const userSignUp = await db.collection("users").findOne({
     email,
   });
@@ -143,11 +143,11 @@ export async function updateExpenses(req, res) {
   const { id } = req.params;
   const { value, description, status } = req.body;
   const email = req.headers.email;
-  const { error } = schemaExpense.validate(
-    { email, value, description, status },
-    { abortEarly: true }
-  );
-  if (error) return res.status(422).send(error.details[0].message);
+  // const { error } = schemaExpense.validate(
+  //   { email, value, description, status },
+  //   { abortEarly: true }
+  // );
+  // if (error) return res.status(422).send(error.details[0].message);
   const userSignUp = await db.collection("users").findOne({
     email,
   });
