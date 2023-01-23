@@ -22,7 +22,7 @@ export async function updateUser(req, res) {
     return res.status(403).send("Password wrong.");
   const hashPwd = bcrypt.hashSync(newPwd, 10);
   try {
-    const newUser = await db.collection("users").updateOne(
+    await db.collection("users").updateOne(
       { _id: ObjectId(user._id) },
       {
         $set: {

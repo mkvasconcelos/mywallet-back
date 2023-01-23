@@ -5,7 +5,7 @@ export default async function deleteSessions() {
     .collection("sessions")
     .find({ date: { $lt: Date.now() - 1800000 } })
     .toArray();
-  deleteSessions.map(
-    async (s) => await db.collection("sessions").deleteOne({ _id: s._id })
+  deleteSessions.map((s) =>
+    db.collection("sessions").deleteOne({ _id: s._id })
   );
 }

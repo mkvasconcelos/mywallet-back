@@ -7,10 +7,11 @@ export async function validExpenseId(req, res, next) {
   const expenseUser = await db.collection("expenses").findOne({
     _id: ObjectId(id),
   });
-  if (!expenseUser)
+  if (!expenseUser) {
     return res.status(404).send("Expense does not exist in our database.");
-  if (user.email !== expenseUser.email)
+  } else if (user.email !== expenseUser.email) {
     return res.status(409).send("This expense is not yours.");
+  }
   res.locals.expense = expenseUser;
   next();
 }
