@@ -1,4 +1,3 @@
-import dayjs from "dayjs";
 import db from "../database/database.js";
 import { ObjectId } from "mongodb";
 
@@ -10,6 +9,7 @@ export async function getExpenses(_, res) {
       .find({
         email,
       })
+      .sort({ date: -1 })
       .toArray();
     return res.status(200).send(expenses);
   } catch (err) {
@@ -19,7 +19,7 @@ export async function getExpenses(_, res) {
 
 export async function postExpenses(req, res) {
   const user = res.locals.user;
-  const { value, description, status } = req.body;
+  const { value, description, status, date } = req.body;
   const newValue = Number(value);
   try {
     await db.collection("expenses").insertOne({
@@ -27,7 +27,7 @@ export async function postExpenses(req, res) {
       value: newValue,
       description,
       status,
-      date: dayjs().format("DD/MM"),
+      date: new Date(Date.parse(date)),
     });
     await db.collection("users").updateOne(
       { _id: ObjectId(user._id) },
@@ -69,6 +69,7 @@ export async function deleteExpenses(_, res) {
       .find({
         email: user.email,
       })
+      .sort({ date: -1 })
       .toArray();
     return res.status(200).send(expenses);
   } catch (err) {
@@ -78,7 +79,7 @@ export async function deleteExpenses(_, res) {
 
 export async function updateExpenses(req, res) {
   const { user, expense } = res.locals;
-  const { value, description } = req.body;
+  const { value, description, date } = req.body;
   const newValue = Number(value);
   try {
     await db.collection("expenses").updateOne(
@@ -87,6 +88,7 @@ export async function updateExpenses(req, res) {
         $set: {
           value: newValue,
           description,
+          date: new Date(Date.parse(date)),
         },
       }
     );
@@ -113,6 +115,7 @@ export async function updateExpenses(req, res) {
       .find({
         email: user.email,
       })
+      .sort({ date: -1 })
       .toArray();
     return res.status(200).send(expenses);
   } catch (err) {

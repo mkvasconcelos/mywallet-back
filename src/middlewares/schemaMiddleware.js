@@ -1,3 +1,4 @@
+import dayjs from "dayjs";
 import { schemaExpense } from "../schemas/expenseSchema.js";
 import {
   schemaEmail,
@@ -44,10 +45,19 @@ export async function validEmail(req, res, next) {
 
 export async function validExpense(req, res, next) {
   const email = req.headers.email;
-  const { value, description, status } = req.body;
+  const { value, description, status, date } = req.body;
+  if (date.length !== 9 && date.length !== 10) return res.sendStatus(422);
+  const newDate = new Date(Date.parse(date));
+  console.log(newDate);
   const newValue = Number(value);
   const { error } = schemaExpense.validate(
-    { email, value: newValue, description, status },
+    {
+      email,
+      value: newValue,
+      description,
+      status,
+      date: newDate,
+    },
     { abortEarly: true }
   );
   if (error) return res.status(422).send(error.details[0].message);
